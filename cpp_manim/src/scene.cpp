@@ -14,6 +14,9 @@ Scene::Scene(bool skip_animations, bool always_update_mobjects,
       show_animation_progress(show_animation_progress),
       default_wait_time(default_wait_time) {
     camera = std::make_unique<Camera>();
+    window = std::make_unique<OpenGLWindow>(
+        camera->get_pixel_width(), camera->get_pixel_height(), "ManimCPP"
+    );
 }
 
 Scene::~Scene() {
@@ -24,8 +27,44 @@ Scene::~Scene() {
 
 void Scene::run() {
     setup();
+    
+    // Initialize window and OpenGL
+    window->init();
+    window->set_scene(this);
+    camera->set_window(window.get());
+    camera->init_context();
+    
     construct();
+    
+    // Main loop
+    float dt = 1.0f / camera->get_fps();
+    while (!window->should_close()) {
+        window->poll_events();
+        update_frame(dt, true);
+        window->swap_buffers();
+    }
+    
     tear_down();
+}
+
+// Default event handlers
+void Scene::on_mouse_motion(double x, double y) {
+    mouse_point = camera->pixel_coords_to_space_coords(x, y);
+}
+
+void Scene::on_mouse_press(double x, double y, int button, int mods) {
+}
+
+void Scene::on_mouse_release(double x, double y, int button, int mods) {
+}
+
+void Scene::on_key_press(int key, int mods) {
+}
+
+void Scene::on_key_release(int key, int mods) {
+}
+
+void Scene::on_resize(int width, int height) {
 }
 
 void Scene::setup() {
@@ -214,6 +253,62 @@ void ThreeDScene::add(Mobject* mobject, bool set_depth_test) {
         mobject->depth_test = true;
     }
     Scene::add(mobject);
+}
+
+// InteractiveScene implementation
+InteractiveScene::InteractiveScene(bool skip_animations, bool always_update_mobjects,
+                                   int start_at_animation_number, int end_at_animation_number,
+                                   bool show_animation_progress, float default_wait_time)
+    : Scene(skip_animations, always_update_mobjects, start_at_animation_number,
+            end_at_animation_number, show_animation_progress, default_wait_time) {
+}
+
+void InteractiveScene::setup() {
+    // Base setup
+}
+
+void InteractiveScene::on_mouse_motion(double x, double y) {
+    Scene::on_mouse_motion(x, y);
+    if (is_grabbing && !selected_mobjects.empty()) {
+        for (auto mobj : selected_mobjects) {
+            mobj->move_to(mouse_point);
+        }
+    }
+}
+
+void InteractiveScene::on_mouse_press(double x, double y, int button, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        // Try to select a mobject
+        for (auto it = mobjects.rbegin(); it != mobjects.rend(); ++it) {
+            Mobject* mobj = *it;
+            // Simple check: is mouse point within mobject's bounding box?
+            // For simplicity, we'll just select the topmost mobject
+            selected_mobjects.clear();
+            selected_mobjects.push_back(mobj);
+            is_grabbing = true;
+            break;
+        }
+    }
+}
+
+void InteractiveScene::on_mouse_release(double x, double y, int button, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        is_grabbing = false;
+    }
+}
+
+void InteractiveScene::on_key_press(int key, int mods) {
+    // Example: press 'c' to clear selection
+    if (key == GLFW_KEY_C) {
+        selected_mobjects.clear();
+    }
+    // Example: press 'escape' to close window
+    if (key == GLFW_KEY_ESCAPE) {
+        window->set_should_close(true);
+    }
+}
+
+void InteractiveScene::on_key_release(int key, int mods) {
 }
 
 } // namespace manim

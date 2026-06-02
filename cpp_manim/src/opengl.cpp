@@ -1,4 +1,5 @@
 #include "manimcpp/opengl.h"
+#include "manimcpp/scene.h"
 #include <stdexcept>
 #include <fstream>
 #include <sstream>
@@ -151,6 +152,57 @@ void OpenGLWindow::init() {
     }
     
     make_context_current();
+    
+    // Set user pointer to this window
+    glfwSetWindowUserPointer(window, this);
+    
+    // Set callbacks
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
+    glfwSetKeyCallback(window, key_callback);
+    glfwSetWindowSizeCallback(window, window_size_callback);
+}
+
+void OpenGLWindow::mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    OpenGLWindow* glfw_window = static_cast<OpenGLWindow*>(glfwGetWindowUserPointer(window));
+    if (glfw_window && glfw_window->get_scene()) {
+        // Get cursor position
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        if (action == GLFW_PRESS) {
+            glfw_window->get_scene()->on_mouse_press(xpos, ypos, button, mods);
+        } else if (action == GLFW_RELEASE) {
+            glfw_window->get_scene()->on_mouse_release(xpos, ypos, button, mods);
+        }
+    }
+}
+
+void OpenGLWindow::cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
+    OpenGLWindow* glfw_window = static_cast<OpenGLWindow*>(glfwGetWindowUserPointer(window));
+    if (glfw_window && glfw_window->get_scene()) {
+        glfw_window->get_scene()->on_mouse_motion(xpos, ypos);
+    }
+}
+
+void OpenGLWindow::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    OpenGLWindow* glfw_window = static_cast<OpenGLWindow*>(glfwGetWindowUserPointer(window));
+    if (glfw_window && glfw_window->get_scene()) {
+        if (action == GLFW_PRESS) {
+            glfw_window->get_scene()->on_key_press(key, mods);
+        } else if (action == GLFW_RELEASE) {
+            glfw_window->get_scene()->on_key_release(key, mods);
+        }
+    }
+}
+
+void OpenGLWindow::window_size_callback(GLFWwindow* window, int width, int height) {
+    OpenGLWindow* glfw_window = static_cast<OpenGLWindow*>(glfwGetWindowUserPointer(window));
+    if (glfw_window) {
+        glfw_window->resize(width, height);
+        if (glfw_window->get_scene()) {
+            glfw_window->get_scene()->on_resize(width, height);
+        }
+    }
 }
 
 void OpenGLWindow::make_context_current() {

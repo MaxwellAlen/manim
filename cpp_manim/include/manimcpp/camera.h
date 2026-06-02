@@ -79,6 +79,9 @@ public:
     
     void resize_frame_shape(bool fixed_dimension = false);
     
+    // Pixel to space coordinate conversion
+    glm::vec3 pixel_coords_to_space_coords(float x, float y, bool relative = false) const;
+    
     std::vector<uint8_t> get_pixel_array();
     
     CameraFrame* get_frame() const { return frame.get(); }

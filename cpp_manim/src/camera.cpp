@@ -117,6 +117,29 @@ void Camera::set_background_color(const Color& color, float opacity) {
     background_rgba = {color.r, color.g, color.b, opacity};
 }
 
+glm::vec3 Camera::pixel_coords_to_space_coords(float x, float y, bool relative) const {
+    // GLFW's y is flipped (0 at top, we need 0 at bottom)
+    float flipped_y = get_pixel_height() - y;
+    
+    glm::vec2 pixel_shape = glm::vec2(get_pixel_width(), get_pixel_height());
+    glm::vec2 frame_shape = get_frame_shape();
+    
+    glm::vec3 coords = glm::vec3(
+        (frame_shape.x / pixel_shape.x) * x,
+        (frame_shape.y / pixel_shape.y) * flipped_y,
+        0.0f
+    );
+    
+    if (!relative) {
+        coords -= glm::vec3(frame_shape.x / 2.0f, frame_shape.y / 2.0f, 0.0f);
+    }
+    
+    // Apply frame transform (center, etc.)
+    coords += frame->get_center();
+    
+    return coords;
+}
+
 ThreeDCamera::ThreeDCamera(int samples) : Camera(1920, 1080, DEFAULT_FPS, BLACK, 1.0f, FRAME_WIDTH, samples) {
 }
 

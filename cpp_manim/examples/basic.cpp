@@ -1,6 +1,6 @@
 #include "manimcpp/manimcpp.h"
 
-class BasicScene : public manim::Scene {
+class BasicScene : public manim::InteractiveScene {
 public:
     void construct() override {
         manim::Circle* circle = new manim::Circle(1.0f, manim::BLUE);
@@ -14,12 +14,6 @@ public:
         add(circle);
         add(square);
         add(triangle);
-        
-        wait(2.0f);
-        
-        remove(circle);
-        remove(square);
-        remove(triangle);
     }
 };
 
